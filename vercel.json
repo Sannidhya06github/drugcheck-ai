@@ -1,7 +1,5 @@
 {
-  "functions": {
-    "api/check.js": {
-      "runtime": "@vercel/node@3"
-    }
-  }
+  "rewrites": [
+    { "source": "/api/check", "destination": "/api/check.js" }
+  ]
 }
