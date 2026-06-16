@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/check.js": {
+      "runtime": "@vercel/node@3"
+    }
+  }
+}
