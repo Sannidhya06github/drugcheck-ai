@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DrugCheck AI — Drug Interaction Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Inter, sans-serif; background: #F7F9FC; color: #1A1A2E; min-height: 100vh; }
+    .header { background: linear-gradient(135deg, #0F2C59 0%, #1A4A8A 100%); padding: 32px 24px 28px; text-align: center; }
+    .header-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+    .header h1 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .header p { color: #A8C4E8; font-size: 13px; }
+    .container { max-width: 600px; margin: 0 auto; padding: 24px 16px 48px; }
+    .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    .card-label { font-size: 12px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+    .drug-input { width: 100%; padding: 13px 16px; border: 1.5px solid #E5E7EB; border-radius: 10px; font-size: 14px; color: #1A1A2E; background: #F9FAFB; font-family: inherit; transition: all 0.2s; margin-bottom: 4px; }
+    .drug-input:focus { outline: none; border-color: #1A4A8A; box-shadow: 0 0 0 3px rgba(26,74,138,0.1); background: #fff; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+    .divider-line { flex: 1; height: 1px; background: #E5E7EB; }
+    .divider-icon { color: #9CA3AF; font-size: 18px; }
+    .btn-check { width: 100%; margin-top: 16px; padding: 14px; background: linear-gradient(135deg, #0F2C59, #1A4A8A); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; letter-spacing: 0.2px; transition: opacity 0.2s; }
+    .btn-check:hover { opacity: 0.9; }
+    .btn-check:disabled { background: #9CA3AF; cursor: not-allowed; opacity: 1; }
+    .error-msg { margin-top: 12px; font-size: 13px; color: #EF4444; }
+    .section-label { font-size: 12px; color: #9CA3AF; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .example-btn { padding: 6px 12px; background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; font-size: 12px; cursor: pointer; color: #374151; font-weight: 500; font-family: inherit; transition: all 0.15s; }
+    .example-btn:hover { background: #F3F4F6; }
+    .loading { text-align: center; padding: 36px; background: #fff; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); }
+    .loading-icon { font-size: 36px; margin-bottom: 12px; animation: pulse 1.4s infinite; display: block; }
+    .loading p { color: #6B7280; font-size: 14px; }
+    .result-card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .severity-banner { padding: 20px 24px; }
+    .severity-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .severity-icon { font-size: 22px; }
+    .severity-label { font-size: 20px; font-weight: 700; }
+    .drug-names { font-size: 14px; color: #374151; font-weight: 500; }
+    .drug-name { color: #0F2C59; font-weight: 700; }
+    .drug-sep { color: #9CA3AF; margin: 0 6px; }
+    .result-body { padding: 20px 24px; }
+    .info-row { margin-bottom: 16px; }
+    .info-row-label { font-size: 11px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .info-row-value { font-size: 14px; color: #374151; line-height: 1.55; }
+    .badges { display: flex; gap: 12px; margin: 16px 0; }
+    .badge { flex: 1; background: #F9FAFB; border-radius: 8px; padding: 10px 12px; border: 1px solid #F3F4F6; }
+    .badge-label { font-size: 10px; font-weight: 700; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 3px; }
+    .badge-value { font-size: 13px; font-weight: 600; color: #374151; }
+    .patient-tip { background: #F0F7FF; border-radius: 10px; padding: 14px 16px; border-left: 3px solid #2D9CDB; }
+    .patient-tip-label { font-size: 11px; font-weight: 700; color: #2D9CDB; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .patient-tip-text { font-size: 13px; color: #374151; line-height: 1.5; }
+    .disclaimer { background: #F9FAFB; padding: 12px 24px; border-top: 1px solid #F3F4F6; font-size: 11px; color: #9CA3AF; text-align: center; }
+    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #fff; border-radius: 10px; margin-bottom: 6px; cursor: pointer; border: 1px solid #F3F4F6; transition: background 0.15s; }
+    .history-item:hover { background: #F9FAFB; }
+    .history-drugs { font-size: 13px; color: #374151; }
+    .history-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+    .footer { text-align: center; margin-top: 24px; font-size: 11px; color: #D1D5DB; }
+    .hidden { display: none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <span style="font-size:28px">⚕️</span>
+    <h1>DrugCheck AI</h1>
+  </div>
+  <p>AI-powered Drug Interaction Analyzer · For educational use</p>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <p class="card-label">Enter Drug Names</p>
+    <input class="drug-input" type="text" id="drug1" placeholder="Drug 1 (e.g., Warfarin)" onkeydown="if(event.key==='Enter') checkInteraction()" />
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-icon">⇄</span>
+      <div class="divider-line"></div>
+    </div>
+    <input class="drug-input" type="text" id="drug2" placeholder="Drug 2 (e.g., Aspirin)" onkeydown="if(event.key==='Enter') checkInteraction()" />
+    <p class="error-msg hidden" id="errorMsg"></p>
+    <button class="btn-check" id="checkBtn" onclick="checkInteraction()">Check Interaction</button>
+  </div>
+
+  <p class="section-label">Try an example</p>
+  <div class="examples">
+    <button class="example-btn" onclick="loadExample('Warfarin','Aspirin')">Warfarin + Aspirin</button>
+    <button class="example-btn" onclick="loadExample('Metformin','Alcohol')">Metformin + Alcohol</button>
+    <button class="example-btn" onclick="loadExample('Atorvastatin','Clarithromycin')">Atorvastatin + Clarithromycin</button>
+    <button class="example-btn" onclick="loadExample('Paracetamol','Ibuprofen')">Paracetamol + Ibuprofen</button>
+  </div>
+
+  <div class="loading hidden" id="loading">
+    <span class="loading-icon">🔬</span>
+    <p>Analyzing clinical data...</p>
+  </div>
+
+  <div class="result-card hidden" id="resultCard">
+    <div class="severity-banner" id="severityBanner">
+      <div class="severity-row">
+        <span class="severity-icon" id="severityIcon"></span>
+        <span class="severity-label" id="severityLabel"></span>
+      </div>
+      <div class="drug-names">
+        <span class="drug-name" id="resDrug1"></span>
+        <span class="drug-sep">+</span>
+        <span class="drug-name" id="resDrug2"></span>
+      </div>
+    </div>
+    <div class="result-body">
+      <div class="info-row">
+        <div class="info-row-label">💊 Clinical Effect</div>
+        <div class="info-row-value" id="resEffect"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-row-label">🔬 Mechanism</div>
+        <div class="info-row-value" id="resMechanism"></div>
+      </div>
+      <div class="info-row">
+        <div class="info-row-label">📋 Management</div>
+        <div class="info-row-value" id="resManagement"></div>
+      </div>
+      <div class="badges">
+        <div class="badge">
+          <div class="badge-label">Onset</div>
+          <div class="badge-value" id="resOnset"></div>
+        </div>
+        <div class="badge">
+          <div class="badge-label">Evidence</div>
+          <div class="badge-value" id="resDocumentation"></div>
+        </div>
+      </div>
+      <div class="patient-tip">
+        <div class="patient-tip-label">Patient Counseling Point</div>
+        <div class="patient-tip-text" id="resPatientTip"></div>
+      </div>
+    </div>
+    <div class="disclaimer">
+      ⚠️ For educational purposes only. Always consult a qualified pharmacist or physician before making clinical decisions.
+    </div>
+  </div>
+
+  <div id="historySection" class="hidden">
+    <p class="section-label">Recent Checks</p>
+    <div id="historyList"></div>
+  </div>
+
+  <p class="footer">Made by Sannidhya Mondal</p>
+</div>
+
+<script>
+  const SEVERITY = {
+    MAJOR:    { color: "#FF3B3B", bg: "#FFF0F0", border: "#FF3B3B", icon: "⛔", label: "Major Interaction" },
+    MODERATE: { color: "#FF8C00", bg: "#FFF8F0", border: "#FF8C00", icon: "⚠️", label: "Moderate Interaction" },
+    MINOR:    { color: "#2D9CDB", bg: "#F0F8FF", border: "#2D9CDB", icon: "ℹ️", label: "Minor Interaction" },
+    NONE:     { color: "#27AE60", bg: "#F0FFF4", border: "#27AE60", icon: "✅", label: "No Interaction" },
+  };
+
+  let history = [];
+
+  function loadExample(d1, d2) {
+    document.getElementById("drug1").value = d1;
+    document.getElementById("drug2").value = d2;
+    checkInteraction();
+  }
+
+  function show(id) { document.getElementById(id).classList.remove("hidden"); }
+  function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+  async function checkInteraction() {
+    const d1 = document.getElementById("drug1").value.trim();
+    const d2 = document.getElementById("drug2").value.trim();
+    const errorEl = document.getElementById("errorMsg");
+
+    if (!d1 || !d2) { errorEl.textContent = "Please enter both drug names."; show("errorMsg"); return; }
+
+    hide("errorMsg");
+    hide("resultCard");
+    show("loading");
+    document.getElementById("checkBtn").disabled = true;
+    document.getElementById("checkBtn").textContent = "Analyzing...";
+
+    try {
+      const response = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ drug1: d1, drug2: d2 })
+      });
+
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
+
+      const cfg = SEVERITY[result.severity] || SEVERITY.NONE;
+
+      const banner = document.getElementById("severityBanner");
+      banner.style.background = cfg.bg;
+      banner.style.borderBottom = "3px solid " + cfg.border;
+      document.getElementById("severityIcon").textContent = cfg.icon;
+      document.getElementById("severityLabel").textContent = cfg.label;
+      document.getElementById("severityLabel").style.color = cfg.color;
+      document.getElementById("resDrug1").textContent = d1;
+      document.getElementById("resDrug2").textContent = d2;
+      document.getElementById("resEffect").textContent = result.effect;
+      document.getElementById("resMechanism").textContent = result.mechanism;
+      document.getElementById("resManagement").textContent = result.management;
+      document.getElementById("resOnset").textContent = result.onset || "Unknown";
+      document.getElementById("resDocumentation").textContent = result.documentation || "Unknown";
+      document.getElementById("resPatientTip").textContent = result.patient_tip;
+
+      hide("loading");
+      show("resultCard");
+      document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
+
+      history = [{ d1, d2, severity: result.severity }, ...history.filter(h => !(h.d1===d1 && h.d2===d2)).slice(0, 4)];
+      renderHistory();
+
+    } catch (err) {
+      hide("loading");
+      errorEl.textContent = "Error: " + (err.message || "Failed to analyze. Please try again.");
+      show("errorMsg");
+    } finally {
+      document.getElementById("checkBtn").disabled = false;
+      document.getElementById("checkBtn").textContent = "Check Interaction";
+    }
+  }
+
+  function renderHistory() {
+    if (history.length <= 1) return;
+    show("historySection");
+    const list = document.getElementById("historyList");
+    list.innerHTML = history.slice(1).map(h => {
+      const cfg = SEVERITY[h.severity] || SEVERITY.NONE;
+      return `<div class="history-item" onclick="loadExample('${h.d1}','${h.d2}')">
+        <span class="history-drugs">${h.d1} + ${h.d2}</span>
+        <span class="history-badge" style="color:${cfg.color};background:${cfg.bg}">${cfg.label.split(" ")[0]}</span>
+      </div>`;
+    }).join("");
+  }
+</script>
+</body>
+</html>
